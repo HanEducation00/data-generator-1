@@ -1,0 +1,29 @@
+# Generator yapılandırması
+source:
+  type: cyme  # cyme, csv, json, twitter
+  path: /path/to/data/
+  pattern: "*.txt"
+  # Twitter için API anahtarları (gerekirse)
+  # api_key: your_api_key
+  # api_secret: your_api_secret
+  # access_token: your_access_token
+  # access_token_secret: your_access_token_secret
+
+sink:
+  type: kafka  # kafka, s3, sql
+  # Kafka yapılandırması
+  bootstrap_servers: localhost:9092
+  topic: data-stream
+  # S3 yapılandırması (gerekirse)
+  # bucket: your-bucket
+  # prefix: your-prefix
+  # region: us-east-1
+  # SQL yapılandırması (gerekirse)
+  # connection_string: postgresql://user:password@localhost:5432/dbname
+  # table_name: your_table
+
+settings:
+  messages_per_second: 10
+  batch_size: 100
+  run_time: 0  # 0 = sonsuz
+  log_level: INFO
