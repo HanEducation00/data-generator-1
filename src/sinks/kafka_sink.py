@@ -10,12 +10,24 @@ class KafkaSink(BaseSink):
     """Sink for sending data to Kafka"""
     
     def __init__(self, config):
+        """
+        Initialize Kafka sink
+        
+        Args:
+            config: Configuration dictionary
+        """
+        # BaseSink'in __init__ metodunu doğru parametreyle çağır
         super().__init__(config)
-        self.bootstrap_servers = config.get("bootstrap_servers", "localhost:9092")
+        
+        # Yapılandırma parametrelerini al
+        self.bootstrap_servers = config.get("bootstrap_servers", "localhost:19092")
         self.topic = config.get("topic", "data-stream")
         self.producer = None
+        
+        # Hemen bağlan
+        self.initialize()
     
-    def connect(self):
+    def initialize(self):
         """Connect to Kafka"""
         try:
             self.producer = KafkaProducer(
@@ -28,29 +40,29 @@ class KafkaSink(BaseSink):
             logger.error(f"Failed to connect to Kafka: {str(e)}")
             raise
     
-    def send_data(self, data):
-        """Send data to Kafka"""
+    def send(self, data):
+        """Send data to Kafka - Generator sınıfı tarafından çağrılır"""
         if not self.producer:
-            raise RuntimeError("Not connected to Kafka")
+            logger.error("Not connected to Kafka, trying to reconnect...")
+            self.initialize()
         
-        sent_count = 0
-        for record in data:
-            try:
-                # Use the 'id' field as the key if available
-                key = record.get('id', None)
-                
-                # Send the record to Kafka
-                future = self.producer.send(self.topic, key=key, value=record)
-                
-                # Wait for the send to complete
-                future.get(timeout=10)
-                sent_count += 1
-                
-            except KafkaError as e:
-                logger.error(f"Error sending message to Kafka: {str(e)}")
-        
-        logger.debug(f"Sent {sent_count} messages to Kafka topic {self.topic}")
-        return sent_count
+        try:
+            # Batch verilerini Kafka'ya gönder
+            future = self.producer.send(
+                self.topic, 
+                key=f"batch-{data.get('batch_id', 'unknown')}", 
+                value=data
+            )
+            
+            # Gönderimin tamamlanmasını bekle
+            future.get(timeout=10)
+            
+            logger.info(f"Sent batch {data.get('batch_id')} with {data.get('record_count')} records to Kafka topic {self.topic}")
+            return True
+            
+        except KafkaError as e:
+            logger.error(f"Error sending batch to Kafka: {str(e)}")
+            return False
     
     def close(self):
         """Close the Kafka producer"""

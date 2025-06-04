@@ -5,8 +5,8 @@ source:
 
 sink:
   type: kafka
-  bootstrap_servers: localhost:9092  # Mevcut Kafka kurulumunuzun adresi
-  topic: test-data-stream
+  bootstrap_servers: localhost:19092,localhost:29092,localhost:39092
+  topic: sensor-data
 
 settings:
   messages_per_second: 1

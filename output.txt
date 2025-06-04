@@ -1,0 +1,40 @@
+.
+├── README.md
+├── config
+│   ├── generator_config.yaml
+│   ├── templates
+│   │   ├── load_profile.json
+│   │   └── twitter.json
+│   └── test_config.yaml
+├── output.txt
+├── requirements.txt
+├── setup.py
+├── src
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   └── generator.cpython-312.pyc
+│   ├── adapters
+│   │   ├── __init__.py
+│   │   ├── base_adapter.py
+│   │   ├── csv_adapter.py
+│   │   ├── cyme_adapter.py
+│   │   ├── json_adapter.py
+│   │   └── twitter_adapter.py
+│   ├── generator.py
+│   ├── main.py
+│   ├── sinks
+│   │   ├── __init__.py
+│   │   ├── base_sink.py
+│   │   ├── kafka_sink.py
+│   │   ├── s3_sink.py
+│   │   └── sql_sink.py
+│   └── utils
+│       ├── __init__.py
+│       ├── __pycache__
+│       ├── config_loader.py
+│       ├── logging_utils.py
+│       └── schema_validator.py
+└── test_data
+    └── sample.csv
+
+10 directories, 28 files

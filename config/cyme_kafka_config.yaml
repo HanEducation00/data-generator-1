@@ -1,0 +1,21 @@
+# Veri Jeneratörü Yapılandırması
+
+# Kaynak yapılandırması
+source:
+  type: cyme
+  data_path: /home/han/projects/data-project-1/0-data/raw_data/2016/AUS/P1R/load_timeseries
+  file_pattern: "cyme_load_timeseries_day_*.txt"
+
+# Hedef yapılandırması
+sink:
+  type: kafka
+  bootstrap_servers: localhost:19092,localhost:29092,localhost:39092
+  topic: sensor-data
+
+# Jeneratör yapılandırması
+generator:
+  batch_size: 750     # Her batch'te maksimum 750 kayıt
+  interval_ms: 2000   # Her zaman dilimi arasında 2 saniye bekle
+  max_records: 0      # 0 = tüm kayıtları gönder
+  loop: false         # Tüm veriyi bir kez gönder
+

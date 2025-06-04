@@ -1,81 +1,74 @@
+from .base_adapter import BaseAdapter
 import os
 import glob
-import pandas as pd
-import logging
-from .base_adapter import BaseAdapter
-
-logger = logging.getLogger("data-generator")
+import csv
 
 class CsvAdapter(BaseAdapter):
-    """Adapter for reading data from CSV files"""
-    
     def __init__(self, config):
         super().__init__(config)
-        self.path = config.get("path", ".")
-        self.pattern = config.get("pattern", "*.csv")
+        self.data_path = config.get('data_path')
+        self.file_pattern = config.get('file_pattern', '*.csv')
+        self.delimiter = config.get('delimiter', ',')
         self.files = []
-        self.current_file = None
+        self.current_file_index = 0
         self.current_data = None
-        self.current_index = 0
-    
-    def connect(self):
-        """Find all CSV files matching the pattern"""
-        pattern = os.path.join(self.path, self.pattern)
+        self.current_position = 0
+        self.headers = None
+        
+    def initialize(self):
+        """Veri dosyalarını bul ve hazırla"""
+        pattern = os.path.join(self.data_path, self.file_pattern)
         self.files = sorted(glob.glob(pattern))
-        
         if not self.files:
-            logger.warning(f"No CSV files found matching pattern: {pattern}")
-        else:
-            logger.info(f"Found {len(self.files)} CSV files")
-            # Open the first file
-            self._open_next_file()
-    
-    def _open_next_file(self):
-        """Open the next file in the list"""
-        if not self.files:
-            return False
+            raise ValueError(f"No files found matching pattern: {pattern}")
+        self._load_next_file()
+        return True
         
-        self.current_file = self.files.pop(0)
-        logger.info(f"Opening CSV file: {self.current_file}")
-        
-        try:
-            self.current_data = pd.read_csv(self.current_file)
-            self.current_index = 0
+    def _load_next_file(self):
+        """Sıradaki dosyayı yükle"""
+        if self.current_file_index < len(self.files):
+            file_path = self.files[self.current_file_index]
+            with open(file_path, 'r', newline='') as f:
+                reader = csv.reader(f, delimiter=self.delimiter)
+                self.headers = next(reader)  # İlk satırı başlık olarak al
+                self.current_data = list(reader)
+            self.current_position = 0
+            self.current_file_index += 1
             return True
-        except Exception as e:
-            logger.error(f"Error reading CSV file {self.current_file}: {str(e)}")
-            return self._open_next_file()  # Try the next file
-    
-    def read_data(self, batch_size=100):
-        """Read a batch of data from the current CSV file"""
+        return False
+        
+    def get_data(self, batch_size):
+        """Belirtilen batch boyutunda veri al"""
         if self.current_data is None:
             return []
-        
-        # Calculate end index for current batch
-        end_index = min(self.current_index + batch_size, len(self.current_data))
-        
-        # If we've reached the end of the current file
-        if self.current_index >= len(self.current_data):
-            # Try to open the next file
-            if not self._open_next_file():
-                return []  # No more files
             
-            # Recalculate end index for the new file
-            end_index = min(batch_size, len(self.current_data))
+        records = []
+        remaining = batch_size
         
-        # Extract the batch
-        batch = self.current_data.iloc[self.current_index:end_index]
+        while remaining > 0:
+            # Mevcut dosyadan veri al
+            available = len(self.current_data) - self.current_position
+            if available > 0:
+                batch = min(available, remaining)
+                end_pos = self.current_position + batch
+                
+                for i in range(self.current_position, end_pos):
+                    row = self.current_data[i]
+                    record = {self.headers[j]: value for j, value in enumerate(row) if j < len(self.headers)}
+                    records.append(record)
+                
+                self.current_position += batch
+                remaining -= batch
+            
+            # Eğer mevcut dosya bittiyse ve daha veri gerekiyorsa, sonraki dosyaya geç
+            if remaining > 0 and self.current_position >= len(self.current_data):
+                if not self._load_next_file():
+                    break  # Başka dosya kalmadı
         
-        # Convert to list of dictionaries
-        records = batch.to_dict(orient="records")
-        
-        # Update the current index
-        self.current_index = end_index
-        
-        logger.debug(f"Read {len(records)} records from {self.current_file}")
         return records
-    
-    def close(self):
-        """Close the adapter"""
-        self.current_data = None
-        logger.info("CSV adapter closed")
+        
+    def has_more_data(self):
+        """Daha fazla veri olup olmadığını kontrol et"""
+        if self.current_data is not None and self.current_position < len(self.current_data):
+            return True
+        return self.current_file_index < len(self.files)

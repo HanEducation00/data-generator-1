@@ -1,36 +1,22 @@
-from abc import ABC, abstractmethod
-import logging
-
-logger = logging.getLogger("data-generator")
-
-class BaseSink(ABC):
-    """Base class for all data sinks"""
-    
+class BaseSink:
     def __init__(self, config):
-        """Initialize the sink with configuration"""
         self.config = config
-        logger.info(f"Initializing {self.__class__.__name__}")
-    
-    @abstractmethod
-    def connect(self):
-        """Connect to the sink"""
-        pass
-    
-    @abstractmethod
-    def send_data(self, data):
-        """Send data to the sink"""
-        pass
-    
-    @abstractmethod
+        
+    def initialize(self):
+        """Hedef sisteme bağlantıyı başlat"""
+        raise NotImplementedError("Subclasses must implement initialize()")
+        
+    def send(self, records):
+        """Verileri hedef sisteme gönder"""
+        raise NotImplementedError("Subclasses must implement send()")
+        
     def close(self):
-        """Close the connection to the sink"""
-        pass
+        """Bağlantıyı kapat"""
+        raise NotImplementedError("Subclasses must implement close()")
     
-    def __enter__(self):
-        """Context manager entry"""
-        self.connect()
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit"""
-        self.close()
+    # Eski metodlar için uyumluluk sağlayıcılar
+    def connect(self):
+        return self.initialize()
+        
+    def send_data(self, data):
+        return self.send(data)
