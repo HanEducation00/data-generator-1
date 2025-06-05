@@ -33,7 +33,14 @@ class KafkaSink(BaseSink):
             self.producer = KafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                key_serializer=lambda v: str(v).encode('utf-8') if v else None
+                key_serializer=lambda v: str(v).encode('utf-8') if v else None,
+                # 🎯 FIXED CONFIG - CORRECT DATA TYPES
+                max_request_size=5242880,      # 5MB
+                buffer_memory=67108864,        # 64MB
+                batch_size=32768,              # 32KB
+                linger_ms=50,                  # 50ms
+                retries=3,                     # 3 attempts
+                acks=1                         # Leader ack (INTEGER!)
             )
             logger.info(f"Connected to Kafka at {self.bootstrap_servers}")
         except Exception as e:
@@ -49,8 +56,8 @@ class KafkaSink(BaseSink):
         try:
             # Batch verilerini Kafka'ya gönder
             future = self.producer.send(
-                self.topic, 
-                key=f"batch-{data.get('batch_id', 'unknown')}", 
+                self.topic,
+                key=f"batch-{data.get('batch_id', 'unknown')}",
                 value=data
             )
             

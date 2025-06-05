@@ -14,7 +14,7 @@ sink:
 
 # Jeneratör yapılandırması
 generator:
-  batch_size: 750     # Her batch'te maksimum 750 kayıt
+  batch_size: 3900     # Her batch'te maksimum 3500 kayıt
   interval_ms: 2000   # Her zaman dilimi arasında 2 saniye bekle
   max_records: 0      # 0 = tüm kayıtları gönder
   loop: false         # Tüm veriyi bir kez gönder
